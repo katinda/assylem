@@ -1,4 +1,209 @@
-<!DOCTYPE html>
+<!-- premier code : <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Galerie Luminis | Collection d'Art Moderne</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-dark);
+            background-color: var(--primary-light);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--text-dark);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #loading-text {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Chargement de l'exposition...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Initialisation de la scène
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf8f9fa);
+        scene.fog = new THREE.Fog(0xf8f9fa, 10, 50);
+
+        // Caméra
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 5);
+
+        // Renderer avec antialiasing
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        // TextureLoader
+        const textureLoader = new THREE.TextureLoader();
+
+        // Chargez la texture du sol
+        const floorTexture = textureLoader.load('https://threejs.org/examples/textures/terrazzo.jpg', (texture) => {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(10, 10);
+            updateLoadingProgress();
+        }, undefined, (error) => {
+            console.error('Erreur de chargement de la texture du sol:', error);
+            updateLoadingProgress();
+        });
+
+        const advancedFloorMaterial = new THREE.MeshStandardMaterial({
+            map: floorTexture,
+            roughness: 0.1,
+            metalness: 0.1
+        });
+
+        // Tableaux d'art
+        const paintingTextures = [
+            'asset/1.png',
+            'asset/2.png',
+            'asset/3.png',
+            'asset/4.png',
+            'asset/5.png',
+            'asset/6.png',
+            'asset/7.png',
+            'asset/8.png',
+            'asset/9.png',
+            'asset/10.png',
+            'asset/11.png',
+            'asset/12.png',
+            'asset/1.png',
+            'asset/1.png',
+            'asset/1.png',
+        ];
+
+        // Variables pour le chargement
+        let loadedTextures = 0;
+        const totalTextures = paintingTextures.length + 1; // Tableaux + texture du sol
+
+        // Mise à jour de la barre de chargement
+        function updateLoadingProgress() {
+            loadedTextures++;
+            const progress = Math.round((loadedTextures / totalTextures) * 100);
+            document.getElementById('loading-text').textContent = `Chargement des œuvres... ${progress}%`;
+
+            if (loadedTextures === totalTextures) {
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loading-screen').style.display = 'none';
+                    }, 500);
+                }, 500);
+            }
+        }
+
+        // Chargez les textures des tableaux
+        const paintingMaterials = paintingTextures.map((textureUrl, index) => {
+            const texture = textureLoader.load(textureUrl, (texture) => {
+                texture.encoding = THREE.sRGBEncoding;
+                console.log(`Texture ${textureUrl} chargée pour le tableau ${index}`);
+                updateLoadingProgress();
+            }, undefined, (error) => {
+                console.error(`Erreur de chargement de la texture ${textureUrl}:`, error);
+                updateLoadingProgress();
+            });
+
+            return new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.1,
+                metalness: 0.1
+            });
+        });
+
+        // Créez des objets 3D pour afficher les images
+        const paintings = paintingMaterials.map((material, index) => {
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(index * 3 - 20, 1.6, -10); // Positionnez les tableaux côte à côte
+            scene.add(mesh);
+            return mesh;
+        });
+
+        // Ajoutez des lumières à la scène
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        scene.add(directionalLight);
+
+        // Positionnez la caméra pour voir les objets
+        camera.position.set(0, 1.6, 5);
+        camera.lookAt(0, 1.6, 0);
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
+et deuxieme code : <!DOCTYPE html>
+ -->
+
+
+
+
+
+
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -723,21 +928,21 @@
 
         // Tableaux d'art
         const paintingTextures = [
-            '1.png',
-            '2.png',
-            '3.png',
-            './asset/4.png',
-            './asset/5.png',
-            './asset/6.png',
-            './asset/7.png',
-            './asset/8.png',
-            './asset/9.png',
-            './asset/10.png',
-            './asset/11.png',
-            './asset/12.png',
-            '1.png',
-            '1.png',
-            '1.png',
+            'asset/1.png',
+            'asset/2.png',
+            'asset/3.png',
+            'asset/4.png',
+            'asset/5.png',
+            'asset/6.png',
+            'asset/7.png',
+            'asset/8.png',
+            'asset/9.png',
+            'asset/10.png',
+            'asset/11.png',
+            'asset/12.png',
+            'asset/1.png',
+            'asset/1.png',
+            'asset/1.png',
         ];
 
         // Variables pour le chargement
@@ -776,12 +981,19 @@
         createMazeGallery();
 
         // Test d'affichage d'un tableau simple
-        const testTexture = textureLoader.load('1.png', (texture) => {
+        const testTexture = textureLoader.load('asset/4.png', (texture) => {
             texture.encoding = THREE.sRGBEncoding;
-            console.log('Texture 1.png chargée');
+            console.log('Texture asset/4.png chargée');
         }, undefined, (error) => {
-            console.error('Erreur lors du chargement de 1.png:', error);
+            console.error('Erreur lors du chargement de asset/4.png:', error);
         });
+     
+        
+       
+        
+      
+        
+        
         const testGeometry = new THREE.PlaneGeometry(2, 2);
         const testMaterial = new THREE.MeshBasicMaterial({ map: testTexture, side: THREE.DoubleSide });
         const testMesh = new THREE.Mesh(testGeometry, testMaterial);
