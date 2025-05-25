@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Galerie d'Art Labyrinthe</title>
+    <style>
+        body { margin: 0; overflow: hidden; touch-action: none; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            font-family: Arial;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .joystick {
+            width: 100px;
+            height: 100px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+        }
+        .joystick-inner {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            position: absolute;
+            top: 30px;
+            left: 30px;
+        }
+        #look-control {
+            width: 150px;
+            height: 150px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+        }
+        #start-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">Appuyez sur Démarrer puis touchez l'écran pour activer les contrôles</div>
+    <button id="start-button">Démarrer</button>
+    <div id="mobile-controls">
+        <div class="joystick" id="move-joystick">
+            <div class="joystick-inner"></div>
+        </div>
+        <div id="look-control"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/TextureLoader.js"></script>
+    <script>
+        // Détection du mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Initialisation de la scène
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 5);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        // Contrôles
+        let controls;
+        if (isMobile) {
+            // Pour mobile, nous utiliserons des contrôles personnalisés
+            controls = {
+                isLocked: false,
+                moveRight: function() {},
+                moveForward: function() {},
+                lock: function() { this.isLocked = true; },
+                unlock: function() { this.isLocked = false; }
+            };
+            
+            document.getElementById('start-button').addEventListener('click', function() {
+                this.style.display = 'none';
+                document.getElementById('instructions').textContent = "Utilisez les joysticks pour vous déplacer";
+                controls.lock();
+            });
+        } else {
+            // Pour desktop, utiliser PointerLockControls
+            controls = new THREE.PointerLockControls(camera, document.body);
+            document.addEventListener('click', () => {
+                controls.lock();
+            });
+        }
+        
+        // Variables de mouvement
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+        
+        // Variables pour les contrôles mobiles
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchMoveX = 0;
+        let touchMoveY = 0;
+        let lookTouchId = null;
+        let moveTouchId = null;
+        
+        // Vitesse de déplacement
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        
+        // Gestion des touches du clavier (pour desktop)
+        const onKeyDown = function(event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = true;
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = true;
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = true;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = true;
+                    break;
+                case 'Space':
+                    moveUp = true;
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    moveDown = true;
+                    break;
+            }
+        };
+        
+        const onKeyUp = function(event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = false;
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = false;
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = false;
+                    break;
+                case 'Space':
+                    moveUp = false;
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    moveDown = false;
+                    break;
+            }
+        };
+        
+        // Seulement pour desktop
+        if (!isMobile) {
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+        }
+        
+        // Contrôles tactiles pour mobile
+        if (isMobile) {
+            const moveJoystick = document.getElementById('move-joystick');
+            const joystickInner = moveJoystick.querySelector('.joystick-inner');
+            const lookControl = document.getElementById('look-control');
+            
+            // Joystick de mouvement
+            moveJoystick.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                if (moveTouchId === null) {
+                    const touch = e.touches[0];
+                    moveTouchId = touch.identifier;
+                    updateJoystickPosition(touch.clientX, touch.clientY);
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === moveTouchId) {
+                        updateJoystickPosition(touch.clientX, touch.clientY);
+                    } else if (touch.identifier === lookTouchId) {
+                        handleLookTouch(touch.clientX, touch.clientY);
+                    }
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === moveTouchId) {
+                        resetJoystick();
+                        moveTouchId = null;
+                    } else if (touch.identifier === lookTouchId) {
+                        lookTouchId = null;
+                    }
+                }
+            }, { passive: false });
+            
+            // Zone de contrôle de la vue
+            lookControl.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                if (lookTouchId === null) {
+                    const touch = e.touches[0];
+                    lookTouchId = touch.identifier;
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                }
+            }, { passive: false });
+            
+            function updateJoystickPosition(clientX, clientY) {
+                const rect = moveJoystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                let deltaX = clientX - centerX;
+                let deltaY = clientY - centerY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDistance = rect.width / 2;
+                
+                if (distance > maxDistance) {
+                    deltaX = deltaX * maxDistance / distance;
+                    deltaY = deltaY * maxDistance / distance;
+                }
+                
+                joystickInner.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                
+                // Mise à jour des mouvements
+                moveForward = deltaY < -10;
+                moveBackward = deltaY > 10;
+                moveLeft = deltaX < -10;
+                moveRight = deltaX > 10;
+            }
+            
+            function resetJoystick() {
+                joystickInner.style.transform = 'translate(0, 0)';
+                moveForward = moveBackward = moveLeft = moveRight = false;
+            }
+            
+            function handleLookTouch(clientX, clientY) {
+                if (!controls.isLocked) return;
+                
+                const deltaX = clientX - touchStartX;
+                const deltaY = clientY - touchStartY;
+                
+                // Sensibilité de rotation
+                const sensitivity = 0.002;
+                camera.rotation.y -= deltaX * sensitivity;
+                camera.rotation.x -= deltaY * sensitivity;
+                
+                // Limiter la rotation verticale
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                
+                touchStartX = clientX;
+                touchStartY = clientY;
+            }
+        }
+        
+        // Éclairage
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 10, 0);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        scene.add(directionalLight);
+        
+        // Lumière pour les tableaux
+        const spotLights = [];
+        for (let i = 0; i < 15; i++) {
+            const spotLight = new THREE.SpotLight(0xffffff, 0.6);
+            spotLight.angle = Math.PI / 6;
+            spotLight.penumbra = 0.5;
+            spotLight.decay = 2;
+            spotLight.distance = 10;
+            spotLight.castShadow = true;
+            spotLights.push(spotLight);
+            scene.add(spotLight);
+        }
+        
+        // Matériaux
+        const wallMaterial = new THREE.MeshStandardMaterial({ 
+            color: 'red',
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xeeeeee,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x888888,
+            roughness: 0.6,
+            metalness: 0.4
+        });
+        
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x333333,
+            roughness: 0.5,
+            metalness: 0.5
+        });
+        
+        // Création de la galerie en labyrinthe
+        createMazeGallery();
+        
+        function createMazeGallery() {
+            // Sol
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(60, 60),
+                floorMaterial
+            );
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            // Plafond
+            const ceiling = new THREE.Mesh(
+                new THREE.PlaneGeometry(60, 60),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            ceiling.position.y = 3;
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.receiveShadow = true;
+            scene.add(ceiling);
+            
+            // Dimensions
+            const wallThickness = 0.2;
+            const wallHeight = 3;
+            
+            // Murs extérieurs
+            createWall(0, wallHeight/2, -30, 60, wallHeight, wallThickness);
+            createWall(0, wallHeight/2, 30, 60, wallHeight, wallThickness);
+            createWall(30, wallHeight/2, 0, wallThickness, wallHeight, 60);
+            createWall(-30, wallHeight/2, 0, wallThickness, wallHeight, 60);
+            
+            // Porte d'entrée
+            const doorWidth = 3;
+            const doorHeight = 2.5;
+            const door = new THREE.Mesh(
+                new THREE.BoxGeometry(doorWidth, doorHeight, wallThickness + 0.1),
+                doorMaterial
+            );
+            door.position.set(0, doorHeight/2, 29.9);
+            scene.add(door);
+            
+            // Murs intérieurs
+            createWall(0, wallHeight/2, -15, 40, wallHeight, wallThickness);
+            createWall(0, wallHeight/2, 15, 40, wallHeight, wallThickness);
+            createWall(-15, wallHeight/2, -5, wallThickness, wallHeight, 20);
+            createWall(-25, wallHeight/2, 5, wallThickness, wallHeight, 10);
+            createWall(15, wallHeight/2, 5, wallThickness, wallHeight, 20);
+            createWall(25, wallHeight/2, -5, wallThickness, wallHeight, 10);
+            createWall(-5, wallHeight/2, -25, 10, wallHeight, wallThickness);
+            createWall(5, wallHeight/2, 25, 10, wallHeight, wallThickness);
+            
+            // Création des tableaux
+            const paintingSize = { width: 2, height: 1.5 };
+            const frameWidth = 0.1;
+            
+            const paintingPositions = [
+                { x: -20, y: 1.6, z: -29.9, rotationY: 0 },
+                { x: 0, y: 1.6, z: -29.9, rotationY: 0 },
+                { x: 20, y: 1.6, z: -29.9, rotationY: 0 },
+                { x: -20, y: 1.6, z: 29.9, rotationY: Math.PI },
+                { x: 20, y: 1.6, z: 29.9, rotationY: Math.PI },
+                { x: 29.9, y: 1.6, z: -20, rotationY: Math.PI/2 },
+                { x: 29.9, y: 1.6, z: 0, rotationY: Math.PI/2 },
+                { x: 29.9, y: 1.6, z: 20, rotationY: Math.PI/2 },
+                { x: -29.9, y: 1.6, z: -20, rotationY: -Math.PI/2 },
+                { x: -29.9, y: 1.6, z: 0, rotationY: -Math.PI/2 },
+                { x: -29.9, y: 1.6, z: 20, rotationY: -Math.PI/2 },
+                { x: 0, y: 1.6, z: -14.9, rotationY: 0 },
+                { x: 0, y: 1.6, z: 14.9, rotationY: Math.PI },
+                { x: -14.9, y: 1.6, z: 5, rotationY: -Math.PI/2 },
+                { x: 14.9, y: 1.6, z: -5, rotationY: Math.PI/2 }
+            ];
+            
+            const textureLoader = new THREE.TextureLoader();
+            const paintingTextures = [
+                'https://source.unsplash.com/random/800x600/?painting1',
+                'https://source.unsplash.com/random/800x600/?painting2',
+                'https://source.unsplash.com/random/800x600/?painting3',
+                'https://source.unsplash.com/random/800x600/?art1',
+                'https://source.unsplash.com/random/800x600/?art2',
+                'https://source.unsplash.com/random/800x600/?art3',
+                'https://source.unsplash.com/random/800x600/?abstract1',
+                'https://source.unsplash.com/random/800x600/?abstract2',
+                'https://source.unsplash.com/random/800x600/?abstract3',
+                'https://source.unsplash.com/random/800x600/?modern-art1',
+                'https://source.unsplash.com/random/800x600/?modern-art2',
+                'https://source.unsplash.com/random/800x600/?portrait1',
+                'https://source.unsplash.com/random/800x600/?portrait2',
+                'https://source.unsplash.com/random/800x600/?landscape1',
+                'https://source.unsplash.com/random/800x600/?landscape2'
+            ];
+            
+            for (let i = 0; i < 15; i++) {
+                createPainting(
+                    paintingPositions[i].x,
+                    paintingPositions[i].y,
+                    paintingPositions[i].z,
+                    paintingPositions[i].rotationY,
+                    paintingTextures[i]
+                );
+                
+                if (spotLights[i]) {
+                    const lightPos = new THREE.Vector3(
+                        paintingPositions[i].x,
+                        paintingPositions[i].y + 2,
+                        paintingPositions[i].z
+                    );
+                    
+                    if (paintingPositions[i].rotationY === 0) {
+                        lightPos.z += 1;
+                    } else if (paintingPositions[i].rotationY === Math.PI) {
+                        lightPos.z -= 1;
+                    } else if (paintingPositions[i].rotationY === Math.PI/2) {
+                        lightPos.x += 1;
+                    } else {
+                        lightPos.x -= 1;
+                    }
+                    
+                    spotLights[i].position.copy(lightPos);
+                    spotLights[i].target.position.set(
+                        paintingPositions[i].x,
+                        paintingPositions[i].y,
+                        paintingPositions[i].z
+                    );
+                    scene.add(spotLights[i].target);
+                }
+            }
+            
+            function createWall(x, y, z, width, height, depth) {
+                const wall = new THREE.Mesh(
+                    new THREE.BoxGeometry(width, height, depth),
+                    wallMaterial
+                );
+                wall.position.set(x, y, z);
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                scene.add(wall);
+                return wall;
+            }
+            
+            function createPainting(x, y, z, rotationY, textureUrl) {
+                // Cadre
+                const frameGeometry = new THREE.BoxGeometry(
+                    paintingSize.width + frameWidth * 2,
+                    paintingSize.height + frameWidth * 2,
+                    0.1
+                );
+                const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+                frame.position.set(x, y, z);
+                frame.rotation.y = rotationY;
+                scene.add(frame);
+                
+                // Tableau
+                const paintingGeometry = new THREE.PlaneGeometry(paintingSize.width, paintingSize.height);
+                const paintingMaterial = new THREE.MeshStandardMaterial({
+                    map: textureLoader.load(textureUrl),
+                    side: THREE.DoubleSide
+                });
+                
+                const painting = new THREE.Mesh(paintingGeometry, paintingMaterial);
+                painting.position.set(
+                    x,
+                    y,
+                    z + (rotationY === 0 ? -0.06 : (rotationY === Math.PI ? 0.06 : 
+                          (rotationY === Math.PI/2 ? 0.06 : -0.06)))
+                );
+                painting.rotation.y = rotationY;
+                scene.add(painting);
+                
+                return { frame, painting };
+            }
+        }
+        
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (controls.isLocked) {
+                const delta = 0.1;
+                
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= velocity.y * 10.0 * delta;
+                
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+                
+                if (moveForward || moveBackward) velocity.z -= direction.z * 5.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 5.0 * delta;
+                
+                if (isMobile) {
+                    // Pour mobile, déplacer la caméra directement
+                    const moveSpeed = 0.1;
+                    if (moveForward) {
+                        camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
+                        camera.position.z -= Math.cos(camera.rotation.y) * moveSpeed;
+                    }
+                    if (moveBackward) {
+                        camera.position.x += Math.sin(camera.rotation.y) * moveSpeed;
+                        camera.position.z += Math.cos(camera.rotation.y) * moveSpeed;
+                    }
+                    if (moveLeft) {
+                        camera.position.x -= Math.sin(camera.rotation.y + Math.PI/2) * moveSpeed;
+                        camera.position.z -= Math.cos(camera.rotation.y + Math.PI/2) * moveSpeed;
+                    }
+                    if (moveRight) {
+                        camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * moveSpeed;
+                        camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * moveSpeed;
+                    }
+                } else {
+                    // Pour desktop, utiliser les contrôles normaux
+                    controls.moveRight(-velocity.x * delta);
+                    controls.moveForward(-velocity.z * delta);
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Ajuster la taille des contrôles mobiles
+            if (isMobile) {
+                const controls = document.getElementById('mobile-controls');
+                controls.style.bottom = '20px';
+                controls.style.padding = `0 ${window.innerWidth > 500 ? '50px' : '20px'}`;
+            }
+        });
+        
+        // Masquer l'interface utilisateur lors du plein écran sur mobile
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.getElementById('instructions').style.display = 'none';
+                document.getElementById('mobile-controls').style.display = 'none';
+            } else {
+                document.getElementById('instructions').style.display = 'block';
+                document.getElementById('mobile-controls').style.display = 'flex';
+            }
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
