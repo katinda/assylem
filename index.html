@@ -277,11 +277,12 @@
                 
                 joystickInner.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
                 
-                // Mise à jour des mouvements
-                moveForward = deltaY < -10;
-                moveBackward = deltaY > 10;
-                moveLeft = deltaX < -10;
-                moveRight = deltaX > 10;
+                // Mise à jour des mouvements avec un seuil plus bas
+                const threshold = 5;
+                moveForward = deltaY < -threshold;
+                moveBackward = deltaY > threshold;
+                moveLeft = deltaX < -threshold;
+                moveRight = deltaX > threshold;
             }
             
             function resetJoystick() {
@@ -551,24 +552,26 @@
                 if (moveLeft || moveRight) velocity.x -= direction.x * 5.0 * delta;
                 
                 if (isMobile) {
-                    // Pour mobile, déplacer la caméra directement
-                    const moveSpeed = 0.1;
+                    // Pour mobile, déplacer la caméra directement avec une meilleure méthode
+                    const moveSpeed = 0.2;
+                    
                     if (moveForward) {
-                        camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
-                        camera.position.z -= Math.cos(camera.rotation.y) * moveSpeed;
+                        camera.translateZ(-moveSpeed);
                     }
                     if (moveBackward) {
-                        camera.position.x += Math.sin(camera.rotation.y) * moveSpeed;
-                        camera.position.z += Math.cos(camera.rotation.y) * moveSpeed;
+                        camera.translateZ(moveSpeed);
                     }
                     if (moveLeft) {
-                        camera.position.x -= Math.sin(camera.rotation.y + Math.PI/2) * moveSpeed;
-                        camera.position.z -= Math.cos(camera.rotation.y + Math.PI/2) * moveSpeed;
+                        camera.translateX(-moveSpeed);
                     }
                     if (moveRight) {
-                        camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * moveSpeed;
-                        camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * moveSpeed;
+                        camera.translateX(moveSpeed);
                     }
+                    
+                    // Limiter la position pour rester dans les limites
+                    camera.position.x = Math.max(-29, Math.min(29, camera.position.x));
+                    camera.position.z = Math.max(-29, Math.min(29, camera.position.z));
+                    camera.position.y = 1.6; // Garder la hauteur constante
                 } else {
                     // Pour desktop, utiliser les contrôles normaux
                     controls.moveRight(-velocity.x * delta);
