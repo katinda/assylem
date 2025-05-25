@@ -6,6 +6,7 @@
     <title>Galerie Luminis | Collection d'Art Moderne</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* Votre CSS existant reste inchangé */
         :root {
             --primary-light: #ffffff;
             --secondary-light: #f8f9fa;
@@ -362,7 +363,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/PointerLockControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/TextureLoader.js"></script>
     <script>
         // Détection du mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -595,6 +595,8 @@
             }, { passive: false });
 
             // Zone de contrôle de la vue
+            let touchStartX = 0;
+            let touchStartY = 0;
             lookControl.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 const touch = e.touches[0];
@@ -721,21 +723,21 @@
 
         // Tableaux d'art
         const paintingTextures = [
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Kandinsky_-_Composition_8.jpg/1200px-Kandinsky_-_Composition_8.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/5/5d/Mondrian_Broadway.jpg/1200px-Mondrian_Broadway.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/b/b4/Jackson_Pollock_-_Number_5_-_1948.jpg/800px-Jackson_Pollock_-_Number_5_-_1948.jpg',
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Claude_Monet_-_Water-Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water-Lilies_-_Google_Art_Project.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/MagrittePipe.jpg/800px-MagrittePipe.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/9/9b/Willem_de_Kooning_-_Woman_I.jpg/800px-Willem_de_Kooning_-_Woman_I.jpg',
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Kazimir_Malevich%2C_1915%2C_Black_Suprematic_Square%2C_oil_on_linen_canvas%2C_79.5_x_79.5_cm%2C_Tretyakov_Gallery%2C_Moscow.jpg/800px-Kazimir_Malevich%2C_1915%2C_Black_Suprematic_Square%2C_oil_on_linen_canvas%2C_79.5_x_79.5_cm%2C_Tretyakov_Gallery%2C_Moscow.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/7/74/Campbell%27s_Soup_Cans_MOMA.jpg/800px-Campbell%27s_Soup_Cans_MOMA.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Les_Demoiselles_d%27Avignon.jpg/1200px-Les_Demoiselles_d%27Avignon.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Jackson_Pollock_-_Autumn_Rhythm_%28Number_30%29.jpg/800px-Jackson_Pollock_-_Autumn_Rhythm_%28Number_30%29.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/5/5b/Willem_de_Kooning%2C_Woman_III%2C_1953%2C_oil_on_canvas%2C_68_x_48_1-2_inches%2C_private_collection.jpg/800px-Willem_de_Kooning%2C_Woman_III%2C_1953%2C_oil_on_canvas%2C_68_x_48_1-2_inches%2C_private_collection.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/0/0b/Jackson_Pollock%2C_Number_1_%28Lavender_Mist%29%2C_1950%2C_NGA_166212.jpg/800px-Jackson_Pollock%2C_Number_1_%28Lavender_Mist%29%2C_1950%2C_NGA_166212.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/3/3e/Mark_Rothko_-_White_Center_%28Yellow%2C_Pink_and_Lavender_on_Rose%29.jpg/800px-Mark_Rothko_-_White_Center_%28Yellow%2C_Pink_and_Lavender_on_Rose%29.jpg',
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Jackson_Pollock%2C_1952%2C_Convergence%2C_oil_on_canvas%2C_237_x_393_cm%2C_Albright-Knox_Art_Gallery%2C_Buffalo%2C_NY.jpg/800px-Jackson_Pollock%2C_1952%2C_Convergence%2C_oil_on_canvas%2C_237_x_393_cm%2C_Albright-Knox_Art_Gallery%2C_Buffalo%2C_NY.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Mark_Rothko_-_Orange_and_Yellow.jpg/800px-Mark_Rothko_-_Orange_and_Yellow.jpg'
+            '1.png',
+            '2.png',
+            '3.png',
+            './asset/4.png',
+            './asset/5.png',
+            './asset/6.png',
+            './asset/7.png',
+            './asset/8.png',
+            './asset/9.png',
+            './asset/10.png',
+            './asset/11.png',
+            './asset/12.png',
+            '1.png',
+            '1.png',
+            '1.png',
         ];
 
         // Variables pour le chargement
@@ -764,11 +766,28 @@
             floorTexture,
             updateLoadingProgress,
             undefined,
-            updateLoadingProgress
+            (error) => {
+                console.error('Erreur de chargement de la texture du sol:', error);
+                updateLoadingProgress();
+            }
         );
 
         // Création de la galerie en labyrinthe
         createMazeGallery();
+
+        // Test d'affichage d'un tableau simple
+        const testTexture = textureLoader.load('1.png', (texture) => {
+            texture.encoding = THREE.sRGBEncoding;
+            console.log('Texture 1.png chargée');
+        }, undefined, (error) => {
+            console.error('Erreur lors du chargement de 1.png:', error);
+        });
+        const testGeometry = new THREE.PlaneGeometry(2, 2);
+        const testMaterial = new THREE.MeshBasicMaterial({ map: testTexture, side: THREE.DoubleSide });
+        const testMesh = new THREE.Mesh(testGeometry, testMaterial);
+        testMesh.position.set(0, 1.6, -28); // Position face à la caméra
+        scene.add(testMesh);
+        camera.position.set(0, 1.6, -25); // Caméra face au tableau
 
         function createMazeGallery() {
             // Sol
@@ -932,8 +951,8 @@
                 painting.position.set(
                     x,
                     y,
-                    z + (rotationY === 0 ? -0.06 : (rotationY === Math.PI ? 0.06 : 
-                          (rotationY === Math.PI/2 ? 0.06 : -0.06)))
+                    z + (rotationY === 0 ? -0.1 : (rotationY === Math.PI ? 0.1 : 
+                          (rotationY === Math.PI/2 ? 0.1 : -0.1)))
                 );
                 painting.rotation.y = rotationY;
                 painting.userData.paintingIndex = index;
@@ -948,10 +967,14 @@
                         texture.encoding = THREE.sRGBEncoding;
                         paintingMaterial.map = texture;
                         paintingMaterial.needsUpdate = true;
+                        console.log(`Texture ${textureUrl} chargée pour le tableau ${index}`);
                         updateLoadingProgress();
                     },
                     undefined,
-                    updateLoadingProgress
+                    (error) => {
+                        console.error(`Erreur de chargement de la texture ${textureUrl}:`, error);
+                        updateLoadingProgress();
+                    }
                 );
 
                 return { frame, painting };
