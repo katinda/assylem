@@ -949,33 +949,33 @@
         testMesh12.rotation.y =  Math.PI; // Rotation autour de l'axe Y
         scene.add(testMesh12);
 
-        // Mesh 13
-        const testTexture13 = textureLoader.load('asset/13.png', (texture) => {
-            texture.encoding = THREE.sRGBEncoding;
-            console.log('Texture asset/13.png chargée');
-        }, undefined, (error) => {
-            console.error('Erreur lors du chargement de asset/13.png:', error);
-        });
-        const testGeometry13 = new THREE.PlaneGeometry(1.5, 1.5);
-        const testMaterial13 = new THREE.MeshBasicMaterial({ map: testTexture13, side: THREE.DoubleSide });
-        const testMesh13 = new THREE.Mesh(testGeometry13, testMaterial13);
-        testMesh13.position.set(-14.4, 1.6, 4.9); // 26.5 + 2.5
-        testMesh13.rotation.y = Math.PI/2; // Rotation autour de l'axe Y
-        scene.add(testMesh13);
+        // // Mesh 13
+        // const testTexture13 = textureLoader.load('asset/13.png', (texture) => {
+        //     texture.encoding = THREE.sRGBEncoding;
+        //     console.log('Texture asset/13.png chargée');
+        // }, undefined, (error) => {
+        //     console.error('Erreur lors du chargement de asset/13.png:', error);
+        // });
+        // const testGeometry13 = new THREE.PlaneGeometry(1.5, 1.5);
+        // const testMaterial13 = new THREE.MeshBasicMaterial({ map: testTexture13, side: THREE.DoubleSide });
+        // const testMesh13 = new THREE.Mesh(testGeometry13, testMaterial13);
+        // testMesh13.position.set(-14.4, 1.6, 4.9); // 26.5 + 2.5
+        // testMesh13.rotation.y = Math.PI/2; // Rotation autour de l'axe Y
+        // scene.add(testMesh13);
 
-        // Mesh 14
-        const testTexture14 = textureLoader.load('asset/14.png', (texture) => {
-            texture.encoding = THREE.sRGBEncoding;
-            console.log('Texture asset/14.png chargée');
-        }, undefined, (error) => {
-            console.error('Erreur lors du chargement de asset/14.png:', error);
-        });
-        const testGeometry14 = new THREE.PlaneGeometry(1.5, 1.5);
-        const testMaterial14 = new THREE.MeshBasicMaterial({ map: testTexture14, side: THREE.DoubleSide });
-        const testMesh14 = new THREE.Mesh(testGeometry14, testMaterial14);
-        testMesh14.position.set(14.4, 1.6, -5.1); // 29 + 2.5
-        testMesh14.rotation.y = Math.PI/2; // Rotation autour de l'axe Y
-        scene.add(testMesh14);
+        // // Mesh 14
+        // const testTexture14 = textureLoader.load('asset/14.png', (texture) => {
+        //     texture.encoding = THREE.sRGBEncoding;
+        //     console.log('Texture asset/14.png chargée');
+        // }, undefined, (error) => {
+        //     console.error('Erreur lors du chargement de asset/14.png:', error);
+        // });
+        // const testGeometry14 = new THREE.PlaneGeometry(1.5, 1.5);
+        // const testMaterial14 = new THREE.MeshBasicMaterial({ map: testTexture14, side: THREE.DoubleSide });
+        // const testMesh14 = new THREE.Mesh(testGeometry14, testMaterial14);
+        // testMesh14.position.set(14.4, 1.6, -5.1); // 29 + 2.5
+        // testMesh14.rotation.y = Math.PI/2; // Rotation autour de l'axe Y
+        // scene.add(testMesh14);
 
         function createMazeGallery() {
             // Sol
