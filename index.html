@@ -687,7 +687,7 @@
 
         // Lumière pour les tableaux
         const spotLights = [];
-        const spotLightIntensity = 1.2; // Augmentez cette valeur pour plus de luminosité
+        const spotLightIntensity = 2; // Augmentez cette valeur pour plus de luminosité
         for (let i = 0; i < 15; i++) {
             const spotLight = new THREE.SpotLight(0xffffff, spotLightIntensity);
             spotLight.angle = Math.PI / 6;
@@ -720,7 +720,7 @@
         });
 
         const frameMaterial = new THREE.MeshStandardMaterial({
-            color: 0xe9ecef,
+            color: "yellow",
             roughness: 0.3,
             metalness: 0.5
         });
